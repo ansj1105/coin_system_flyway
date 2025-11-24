@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'org.flywaydb.flyway' version '9.22.3'
+}
+
+group = 'com.coinsystem'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+dependencies {
+    // PostgreSQL JDBC Driver
+    implementation 'org.postgresql:postgresql:42.6.0'
+    
+    // Flyway Core
+    implementation 'org.flywaydb:flyway-core:9.22.3'
+    
+    // Test Dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.testcontainers:testcontainers:1.19.3'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'org.testcontainers:postgresql:1.19.3'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+}
+
+flyway {
+    url = project.hasProperty('db.url') ? project.property('db.url') : 'jdbc:postgresql://localhost:5432/coin_system_cloud'
+    user = project.hasProperty('db.user') ? project.property('db.user') : 'foxya'
+    password = project.hasProperty('db.password') ? project.property('db.password') : 'foxya1124!@'
+    locations = ['filesystem:src/main/resources/db/migration']
+    encoding = 'UTF-8'
+    validateOnMigrate = true
+    baselineOnMigrate = true
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
