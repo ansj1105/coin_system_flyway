@@ -40,7 +40,7 @@ COMMENT ON COLUMN users.referral_code IS '레퍼럴 코드';
 COMMENT ON COLUMN users.status IS '상태 (ACTIVE, BLOCKED, DELETED 등)';
 
 -- Create User Wallet Table
-CREATE TABLE user_wallet (
+CREATE TABLE user_wallets (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
     currency_id INT NOT NULL,
@@ -72,7 +72,7 @@ COMMENT ON COLUMN user_wallet.status IS '상태 (ACTIVE, FROZEN, CLOSED)';
 COMMENT ON COLUMN user_wallet.last_sync_height IS '체인 동기화용 블록 높이';
 
 -- Create Wallet Transaction Table
-CREATE TABLE wallet_transaction (
+CREATE TABLE wallet_transactions (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
     wallet_id BIGINT NOT NULL,
@@ -112,7 +112,7 @@ COMMENT ON COLUMN wallet_transaction.fee IS '수수료';
 COMMENT ON COLUMN wallet_transaction.status IS '트랜잭션 상태 (PENDING, CONFIRMED, FAILED, CANCELED)';
 
 -- Create Wallet Transaction Status Log Table
-CREATE TABLE wallet_transaction_status_log (
+CREATE TABLE wallet_transaction_status_logs (
     id BIGSERIAL NOT NULL,
     tx_id BIGINT NOT NULL,
     old_status VARCHAR(20) NULL,
@@ -132,7 +132,7 @@ COMMENT ON COLUMN wallet_transaction_status_log.description IS '설명';
 COMMENT ON COLUMN wallet_transaction_status_log.created_by IS '생성자 (시스템 or 관리자ID)';
 
 -- Create Referral Relation Table
-CREATE TABLE referral_relation (
+CREATE TABLE referral_relations (
     id BIGSERIAL NOT NULL,
     referrer_id BIGINT NOT NULL,
     referred_id BIGINT NOT NULL,
@@ -154,7 +154,7 @@ COMMENT ON COLUMN referral_relation.level IS '레벨 (1=직접, 2,3.. 멀티레�
 COMMENT ON COLUMN referral_relation.status IS '상태 (ACTIVE, DEACTIVE)';
 
 -- Create Referral Stats Table
-CREATE TABLE referral_stats (
+CREATE TABLE referral_stats_logs (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
     direct_count INT DEFAULT 0 NOT NULL,
