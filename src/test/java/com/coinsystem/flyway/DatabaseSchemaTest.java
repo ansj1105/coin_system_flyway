@@ -43,7 +43,7 @@ class DatabaseSchemaTest {
 
         flyway = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
-                .locations("filesystem:src/main/resources/db/migration")
+                .locations("filesystem:src/main/resources/db/migration", "filesystem:src/test/resources/db/migration")
                 .encoding("UTF-8")
                 .validateOnMigrate(true)
                 .baselineOnMigrate(true)
@@ -93,7 +93,7 @@ class DatabaseSchemaTest {
                              "JOIN information_schema.constraint_column_usage AS ccu " +
                              "  ON ccu.constraint_name = tc.constraint_name " +
                              "WHERE tc.constraint_type = 'FOREIGN KEY' " +
-                             "  AND tc.table_name = 'user_wallet'")) {
+                             "  AND tc.table_name = 'user_wallets'")) {
 
             List<String> foreignKeys = new ArrayList<>();
             while (rs.next()) {
@@ -115,7 +115,7 @@ class DatabaseSchemaTest {
              ResultSet rs = statement.executeQuery(
                      "SELECT column_name, data_type " +
                              "FROM information_schema.columns " +
-                             "WHERE table_name = 'wallet_transaction' " +
+                             "WHERE table_name = 'wallet_transactions' " +
                              "  AND column_name IN ('tx_type', 'status', 'direction')")) {
 
             List<String> columns = new ArrayList<>();
@@ -151,7 +151,7 @@ class DatabaseSchemaTest {
             assertThat(uniqueConstraints).contains(
                     "users.login_id",
                     "users.referral_code",
-                    "referral_stats.user_id"
+                    "referral_stats_logs.user_id"
             );
         }
     }
@@ -178,7 +178,7 @@ class DatabaseSchemaTest {
             }
 
             try (ResultSet rs = statement.executeQuery(
-                    "SELECT balance FROM user_wallet WHERE user_id = (SELECT id FROM users WHERE login_id = 'testuser')")) {
+                    "SELECT balance FROM user_wallets WHERE user_id = (SELECT id FROM users WHERE login_id = 'testuser')")) {
                 // 지갑이 없을 수 있으므로 이 테스트는 스킵
             }
         }
