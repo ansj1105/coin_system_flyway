@@ -162,14 +162,17 @@ class DatabaseSchemaTest {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
              Statement statement = connection.createStatement()) {
 
-            // 통화 삽입 (기본값 테스트)
+            // 통화 삽입 (기본값 테스트) - 중복 시 무시
             statement.executeUpdate(
-                    "INSERT INTO currency (code, name) VALUES ('KRW', '한국 원')");
+                    "INSERT INTO currency (code, name) VALUES ('KRW', '한국 원') ON CONFLICT (code, chain) DO NOTHING");
 
-            // 유저 삽입 (기본값 테스트)
+            // 유저 삽입 (기본값 테스트) - 중복 시 무시
             statement.executeUpdate(
-                    "INSERT INTO users (login_id, password_hash, referral_code) VALUES ('testuser', 'hash', 'REF001')");
-
+                    "INSERT INTO users (login_id, password_hash, referral_code) VALUES ('testuser', 'hash', 'REF001') ON CONFLICT (login_id) DO NOTHING");
+            
+            // 이미 존재하는 경우를 대비해 referral_code 중복 방지 (다른 테스트 데이터와 겹칠 경우)
+            // 만약 위 insert가 실행되지 않았다면(이미 존재해서), 아래 쿼리로 상태 확인 가능
+            
             // 기본값 확인
             try (ResultSet rs = statement.executeQuery(
                     "SELECT status FROM users WHERE login_id = 'testuser'")) {
