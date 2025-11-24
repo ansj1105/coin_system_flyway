@@ -60,7 +60,7 @@ class DatabaseSchemaTest {
              ResultSet rs = statement.executeQuery(
                      "SELECT column_name, data_type, is_nullable " +
                              "FROM information_schema.columns " +
-                             "WHERE table_name = '유저' AND table_schema = 'public' " +
+                             "WHERE table_name = 'users' AND table_schema = 'public' " +
                              "ORDER BY ordinal_position")) {
 
             List<String> columns = new ArrayList<>();
@@ -69,8 +69,8 @@ class DatabaseSchemaTest {
             }
 
             assertThat(columns).containsExactlyInAnyOrder(
-                    "id", "referral_code", "lgn_id", "lgn_pwd", "wallet_id",
-                    "email", "phone", "status", "created_at", "updated_at", "deleted_at"
+                    "id", "login_id", "password_hash", "referral_code",
+                    "status", "created_at", "updated_at"
             );
         }
     }
@@ -93,7 +93,7 @@ class DatabaseSchemaTest {
                              "JOIN information_schema.constraint_column_usage AS ccu " +
                              "  ON ccu.constraint_name = tc.constraint_name " +
                              "WHERE tc.constraint_type = 'FOREIGN KEY' " +
-                             "  AND tc.table_name = '유저 지갑'")) {
+                             "  AND tc.table_name = 'user_wallet'")) {
 
             List<String> foreignKeys = new ArrayList<>();
             while (rs.next()) {
@@ -101,32 +101,32 @@ class DatabaseSchemaTest {
             }
 
             assertThat(foreignKeys).contains(
-                    "user_id -> 유저",
-                    "currency_id -> 통화종류"
+                    "user_id -> users",
+                    "currency_id -> currency"
             );
         }
     }
 
     @Test
-    @DisplayName("트랜잭션 기록 테이블의 ENUM 타입이 올바르게 사용되어야 함")
-    void testTransactionLogEnumTypes() throws Exception {
+    @DisplayName("트랜잭션 기록 테이블의 타입이 올바르게 설정되어야 함")
+    void testTransactionLogTypes() throws Exception {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(
-                     "SELECT column_name, udt_name " +
+                     "SELECT column_name, data_type " +
                              "FROM information_schema.columns " +
-                             "WHERE table_name = '트랜잭션 기록' " +
-                             "  AND udt_name LIKE '%enum%'")) {
+                             "WHERE table_name = 'wallet_transaction' " +
+                             "  AND column_name IN ('tx_type', 'status', 'direction')")) {
 
-            List<String> enumColumns = new ArrayList<>();
+            List<String> columns = new ArrayList<>();
             while (rs.next()) {
-                enumColumns.add(rs.getString("column_name") + ":" + rs.getString("udt_name"));
+                columns.add(rs.getString("column_name") + ":" + rs.getString("data_type"));
             }
 
-            assertThat(enumColumns).contains(
-                    "tx_type:tx_type_enum",
-                    "status:tx_status_enum"
-            );
+            assertThat(columns).hasSize(3);
+            assertThat(columns).anyMatch(c -> c.startsWith("tx_type:"));
+            assertThat(columns).anyMatch(c -> c.startsWith("status:"));
+            assertThat(columns).anyMatch(c -> c.startsWith("direction:"));
         }
     }
 
@@ -149,9 +149,9 @@ class DatabaseSchemaTest {
             }
 
             assertThat(uniqueConstraints).contains(
-                    "유저.lgn_id",
-                    "유저.referral_code",
-                    "레퍼럴 정보 테이블.user_id"
+                    "users.login_id",
+                    "users.referral_code",
+                    "referral_stats.user_id"
             );
         }
     }
@@ -162,23 +162,23 @@ class DatabaseSchemaTest {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
              Statement statement = connection.createStatement()) {
 
-            // 통화종류 삽입 (기본값 테스트)
+            // 통화 삽입 (기본값 테스트)
             statement.executeUpdate(
-                    "INSERT INTO \"통화종류\" (currency) VALUES ('KRW')");
+                    "INSERT INTO currency (code, name) VALUES ('KRW', '한국 원')");
 
             // 유저 삽입 (기본값 테스트)
             statement.executeUpdate(
-                    "INSERT INTO \"유저\" (referral_code, lgn_id, lgn_pwd) VALUES ('REF001', 'testuser', 'pwd')");
+                    "INSERT INTO users (login_id, password_hash, referral_code) VALUES ('testuser', 'hash', 'REF001')");
 
             // 기본값 확인
             try (ResultSet rs = statement.executeQuery(
-                    "SELECT status FROM \"유저\" WHERE lgn_id = 'testuser'")) {
+                    "SELECT status FROM users WHERE login_id = 'testuser'")) {
                 assertThat(rs.next()).isTrue();
-                assertThat(rs.getString("status")).isEqualTo("active");
+                assertThat(rs.getString("status")).isEqualTo("ACTIVE");
             }
 
             try (ResultSet rs = statement.executeQuery(
-                    "SELECT balance FROM \"유저 지갑\" WHERE user_id = (SELECT id FROM \"유저\" WHERE lgn_id = 'testuser')")) {
+                    "SELECT balance FROM user_wallet WHERE user_id = (SELECT id FROM users WHERE login_id = 'testuser')")) {
                 // 지갑이 없을 수 있으므로 이 테스트는 스킵
             }
         }

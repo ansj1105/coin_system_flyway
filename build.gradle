@@ -38,6 +38,7 @@ flyway {
     encoding = 'UTF-8'
     validateOnMigrate = true
     baselineOnMigrate = true
+    cleanDisabled = false  // clean 명령 활성화 (개발 환경용)
 }
 
 tasks.named('test') {

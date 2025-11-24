@@ -1,176 +1,179 @@
--- Create Currency Type Table (통화종류)
-CREATE TABLE "통화종류" (
+-- Create Currency Table
+CREATE TABLE currency (
     id SERIAL NOT NULL,
-    currency currency_type_enum NULL,
-    name VARCHAR(50) NULL,
-    symbol VARCHAR(10) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT PK_통화종류 PRIMARY KEY (id)
+    code VARCHAR(10) NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    chain VARCHAR(50) NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT PK_currency PRIMARY KEY (id),
+    CONSTRAINT UK_currency_code_chain UNIQUE (code, chain)
 );
 
-COMMENT ON TABLE "통화종류" IS '통화 종류 테이블';
-COMMENT ON COLUMN "통화종류".id IS 'sequence ID(인조키)';
-COMMENT ON COLUMN "통화종류".currency IS '통화 종류 (KRW,USDT 등등)';
-COMMENT ON COLUMN "통화종류".name IS '통화 이름';
-COMMENT ON COLUMN "통화종류".symbol IS '통화 심볼';
+COMMENT ON TABLE currency IS '통화 종류 테이블';
+COMMENT ON COLUMN currency.id IS 'sequence ID(인조키)';
+COMMENT ON COLUMN currency.code IS '통화 코드 (KRW, USDT, BTC 등)';
+COMMENT ON COLUMN currency.name IS '통화 이름';
+COMMENT ON COLUMN currency.chain IS '체인 (TRON, ETH, INTERNAL 등)';
+COMMENT ON COLUMN currency.is_active IS '활성화 여부';
 
--- Create User Table (유저)
-CREATE TABLE "유저" (
+-- Create Users Table
+CREATE TABLE users (
     id BIGSERIAL NOT NULL,
-    referral_code VARCHAR(10) NOT NULL,
-    lgn_id VARCHAR(50) NOT NULL,
-    lgn_pwd VARCHAR(255) NOT NULL,
-    wallet_id BIGINT NULL,
-    email VARCHAR(255) NULL,
-    phone VARCHAR(20) NULL,
-    status VARCHAR(20) DEFAULT 'active' NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    CONSTRAINT PK_유저 PRIMARY KEY (id),
-    CONSTRAINT UK_유저_lgn_id UNIQUE (lgn_id),
-    CONSTRAINT UK_유저_referral_code UNIQUE (referral_code)
+    login_id VARCHAR(50) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    referral_code VARCHAR(20) NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT PK_users PRIMARY KEY (id),
+    CONSTRAINT UK_users_login_id UNIQUE (login_id),
+    CONSTRAINT UK_users_referral_code UNIQUE (referral_code)
 );
 
-COMMENT ON TABLE "유저" IS '유저 테이블';
-COMMENT ON COLUMN "유저".id IS 'user_id';
-COMMENT ON COLUMN "유저".referral_code IS '레퍼럴 코드';
-COMMENT ON COLUMN "유저".lgn_id IS '로그인아이디';
-COMMENT ON COLUMN "유저".lgn_pwd IS '로그인 비밀번호';
-COMMENT ON COLUMN "유저".wallet_id IS '지갑id';
+COMMENT ON TABLE users IS '유저 테이블';
+COMMENT ON COLUMN users.id IS 'user_id';
+COMMENT ON COLUMN users.login_id IS '로그인 아이디';
+COMMENT ON COLUMN users.password_hash IS '비밀번호 해시';
+COMMENT ON COLUMN users.referral_code IS '레퍼럴 코드';
+COMMENT ON COLUMN users.status IS '상태 (ACTIVE, BLOCKED, DELETED 등)';
 
--- Create User Wallet Table (유저 지갑)
-CREATE TABLE "유저 지갑" (
+-- Create User Wallet Table
+CREATE TABLE user_wallet (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
     currency_id INT NOT NULL,
-    address VARCHAR(255) NOT NULL,
-    private_key VARCHAR(255) NOT NULL,
-    balance DECIMAL(18, 8) DEFAULT 0.00000000 NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    CONSTRAINT PK_유저_지갑 PRIMARY KEY (id),
-    CONSTRAINT FK_유저_TO_유저_지갑_1 FOREIGN KEY (user_id) REFERENCES "유저"(id) ON DELETE CASCADE,
-    CONSTRAINT FK_통화종류_TO_유저_지갑_1 FOREIGN KEY (currency_id) REFERENCES "통화종류"(id) ON DELETE RESTRICT
-);
-
-COMMENT ON TABLE "유저 지갑" IS '유저 지갑 테이블';
-COMMENT ON COLUMN "유저 지갑".id IS 'Sequence ID (인조키)';
-COMMENT ON COLUMN "유저 지갑".user_id IS 'user_id';
-COMMENT ON COLUMN "유저 지갑".currency_id IS '통화 종류 (KRW,USDT 등등)';
-COMMENT ON COLUMN "유저 지갑".address IS '지갑주소';
-COMMENT ON COLUMN "유저 지갑".private_key IS '개인 키 주소';
-COMMENT ON COLUMN "유저 지갑".balance IS '지갑잔액';
-COMMENT ON COLUMN "유저 지갑".created_at IS '생성 일자';
-COMMENT ON COLUMN "유저 지갑".updated_at IS '수정 일자';
-COMMENT ON COLUMN "유저 지갑".deleted_at IS '삭제 일자';
-
--- Create Referral Info Table (레퍼럴 정보 테이블)
-CREATE TABLE "레퍼럴 정보 테이블" (
-    id BIGSERIAL NOT NULL,
-    user_id INT NOT NULL,
-    referral_code VARCHAR(10) NOT NULL,
-    referral_grade INT DEFAULT 0 NOT NULL,
-    referral_counts INT DEFAULT 0 NULL,
-    total_reward DECIMAL(18, 8) DEFAULT 0.00000000 NULL,
-    created_at DATE DEFAULT CURRENT_DATE NOT NULL,
-    deleted_at DATE NULL,
-    updated_at DATE DEFAULT CURRENT_DATE NOT NULL,
-    CONSTRAINT PK_레퍼럴_정보_테이블 PRIMARY KEY (id),
-    CONSTRAINT FK_유저_TO_레퍼럴_정보 FOREIGN KEY (user_id) REFERENCES "유저"(id) ON DELETE CASCADE,
-    CONSTRAINT UK_레퍼럴_정보_user_id UNIQUE (user_id)
-);
-
-COMMENT ON TABLE "레퍼럴 정보 테이블" IS '레퍼럴 정보 테이블';
-COMMENT ON COLUMN "레퍼럴 정보 테이블".user_id IS '유저 ID';
-COMMENT ON COLUMN "레퍼럴 정보 테이블".referral_code IS '레퍼럴 코드';
-COMMENT ON COLUMN "레퍼럴 정보 테이블".referral_grade IS '레퍼럴 등급';
-COMMENT ON COLUMN "레퍼럴 정보 테이블".referral_counts IS '레퍼럴 수';
-COMMENT ON COLUMN "레퍼럴 정보 테이블".total_reward IS '총 리워드';
-
--- Create Referral Relation Table (레퍼럴 관계 테이블)
-CREATE TABLE "레퍼럴 관계 테이블" (
-    id BIGSERIAL NOT NULL,
-    referred_id INT NOT NULL,
-    referral_id INT NOT NULL,
-    status referral_status_enum DEFAULT 'active' NOT NULL,
-    reward_rate DECIMAL(5, 2) DEFAULT 0.00 NULL,
-    created_at DATE DEFAULT CURRENT_DATE NOT NULL,
-    deleted_at DATE NULL,
-    updated_at DATE DEFAULT CURRENT_DATE NOT NULL,
-    CONSTRAINT PK_레퍼럴_관계_테이블 PRIMARY KEY (id),
-    CONSTRAINT FK_레퍼럴_관계_referred FOREIGN KEY (referred_id) REFERENCES "유저"(id) ON DELETE CASCADE,
-    CONSTRAINT FK_레퍼럴_관계_referral FOREIGN KEY (referral_id) REFERENCES "유저"(id) ON DELETE CASCADE
-);
-
-COMMENT ON TABLE "레퍼럴 관계 테이블" IS '레퍼럴 관계 테이블';
-COMMENT ON COLUMN "레퍼럴 관계 테이블".id IS 'referral_id';
-COMMENT ON COLUMN "레퍼럴 관계 테이블".referred_id IS '추천받은 유저 ID';
-COMMENT ON COLUMN "레퍼럴 관계 테이블".referral_id IS '추천한 유저 ID';
-COMMENT ON COLUMN "레퍼럴 관계 테이블".status IS 'active, deactive';
-COMMENT ON COLUMN "레퍼럴 관계 테이블".reward_rate IS '리워드 비율';
-
--- Create Transaction Status Log Table (트랜잭션 상태 기록)
-CREATE TABLE "트랜잭션 상태 기록" (
-    id VARCHAR(255) NOT NULL,
-    tx_hash VARCHAR(255) NULL,
-    tx_type VARCHAR(255) NULL,
-    status VARCHAR(255) NULL,
-    description VARCHAR(255) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT PK_트랜잭션_상태_기록 PRIMARY KEY (id)
-);
-
-COMMENT ON TABLE "트랜잭션 상태 기록" IS '트랜잭션 상태 기록 테이블';
-COMMENT ON COLUMN "트랜잭션 상태 기록".tx_hash IS '트랜잭션 해시';
-COMMENT ON COLUMN "트랜잭션 상태 기록".tx_type IS '트랜잭션 타입';
-COMMENT ON COLUMN "트랜잭션 상태 기록".status IS '트랜잭션 상태';
-COMMENT ON COLUMN "트랜잭션 상태 기록".description IS '설명';
-
--- Create Transaction Log Table (트랜잭션 기록)
-CREATE TABLE "트랜잭션 기록" (
-    id BIGSERIAL NOT NULL,
-    currency INT NOT NULL,
-    wallet_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    tx_hash VARCHAR(255) NOT NULL,
-    tx_type tx_type_enum NOT NULL,
-    amount DECIMAL(18, 8) NOT NULL,
-    status tx_status_enum NOT NULL,
-    fee DECIMAL(18, 8) DEFAULT 0.00000000 NULL,
-    block_number BIGINT NULL,
-    confirmations INT DEFAULT 0 NULL,
-    from_address VARCHAR(255) NULL,
-    to_address VARCHAR(255) NULL,
-    memo VARCHAR(500) NULL,
+    address VARCHAR(255) NULL,
+    private_key VARCHAR(255) NULL,
+    tag_memo VARCHAR(100) NULL,
+    balance DECIMAL(36, 18) DEFAULT 0 NOT NULL,
+    locked_balance DECIMAL(36, 18) DEFAULT 0 NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    last_sync_height BIGINT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT PK_트랜잭션_기록 PRIMARY KEY (id),
-    CONSTRAINT FK_통화종류_TO_트랜잭션_기록_1 FOREIGN KEY (currency) REFERENCES "통화종류"(id) ON DELETE RESTRICT,
-    CONSTRAINT FK_유저_지갑_TO_트랜잭션_기록_1 FOREIGN KEY (wallet_id) REFERENCES "유저 지갑"(id) ON DELETE RESTRICT,
-    CONSTRAINT FK_유저_TO_트랜잭션_기록_1 FOREIGN KEY (user_id) REFERENCES "유저"(id) ON DELETE CASCADE
+    CONSTRAINT PK_user_wallet PRIMARY KEY (id),
+    CONSTRAINT FK_wallet_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT FK_wallet_currency FOREIGN KEY (currency_id) REFERENCES currency(id) ON DELETE RESTRICT,
+    CONSTRAINT UK_user_wallet_user_currency UNIQUE (user_id, currency_id)
 );
 
-COMMENT ON TABLE "트랜잭션 기록" IS '트랜잭션 기록 테이블';
-COMMENT ON COLUMN "트랜잭션 기록".id IS '트랜잭션 ID';
-COMMENT ON COLUMN "트랜잭션 기록".currency IS '코인 ID';
-COMMENT ON COLUMN "트랜잭션 기록".wallet_id IS 'wallet_id';
-COMMENT ON COLUMN "트랜잭션 기록".user_id IS 'user_id';
-COMMENT ON COLUMN "트랜잭션 기록".tx_hash IS '트랜잭션 hash기록';
-COMMENT ON COLUMN "트랜잭션 기록".tx_type IS '트랜잭션 타입(입금,출금)';
-COMMENT ON COLUMN "트랜잭션 기록".amount IS '트랜잭션 양';
-COMMENT ON COLUMN "트랜잭션 기록".status IS '트랜잭션 상태';
-COMMENT ON COLUMN "트랜잭션 기록".fee IS '수수료';
-COMMENT ON COLUMN "트랜잭션 기록".block_number IS '블록 번호';
-COMMENT ON COLUMN "트랜잭션 기록".confirmations IS '확인 횟수';
-COMMENT ON COLUMN "트랜잭션 기록".from_address IS '발신 주소';
-COMMENT ON COLUMN "트랜잭션 기록".to_address IS '수신 주소';
-COMMENT ON COLUMN "트랜잭션 기록".memo IS '메모';
-COMMENT ON COLUMN "트랜잭션 기록".created_at IS '생성 시간';
-COMMENT ON COLUMN "트랜잭션 기록".updated_at IS '업데이트 시간';
+COMMENT ON TABLE user_wallet IS '유저 지갑 테이블';
+COMMENT ON COLUMN user_wallet.id IS 'Sequence ID (인조키)';
+COMMENT ON COLUMN user_wallet.user_id IS 'user_id';
+COMMENT ON COLUMN user_wallet.currency_id IS '통화 ID';
+COMMENT ON COLUMN user_wallet.address IS '지갑주소';
+COMMENT ON COLUMN user_wallet.private_key IS '개인 키 주소';
+COMMENT ON COLUMN user_wallet.tag_memo IS 'XRP memo, TRON tag 등';
+COMMENT ON COLUMN user_wallet.balance IS '지갑잔액';
+COMMENT ON COLUMN user_wallet.locked_balance IS '잠금 잔액 (출금중/주문중 등)';
+COMMENT ON COLUMN user_wallet.status IS '상태 (ACTIVE, FROZEN, CLOSED)';
+COMMENT ON COLUMN user_wallet.last_sync_height IS '체인 동기화용 블록 높이';
+
+-- Create Wallet Transaction Table
+CREATE TABLE wallet_transaction (
+    id BIGSERIAL NOT NULL,
+    user_id BIGINT NOT NULL,
+    wallet_id BIGINT NOT NULL,
+    currency_id INT NOT NULL,
+    tx_hash VARCHAR(255) NULL,
+    tx_type VARCHAR(20) NOT NULL,
+    direction VARCHAR(10) NOT NULL,
+    amount DECIMAL(36, 18) NOT NULL,
+    fee DECIMAL(36, 18) DEFAULT 0 NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    confirmed_at TIMESTAMP NULL,
+    failed_at TIMESTAMP NULL,
+    request_ip VARCHAR(45) NULL,
+    request_source VARCHAR(50) NULL,
+    description VARCHAR(255) NULL,
+    error_code VARCHAR(50) NULL,
+    error_message VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT PK_wallet_transaction PRIMARY KEY (id),
+    CONSTRAINT FK_tx_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT FK_tx_wallet FOREIGN KEY (wallet_id) REFERENCES user_wallet(id) ON DELETE RESTRICT,
+    CONSTRAINT FK_tx_currency FOREIGN KEY (currency_id) REFERENCES currency(id) ON DELETE RESTRICT
+);
+
+COMMENT ON TABLE wallet_transaction IS '트랜잭션 기록 테이블';
+COMMENT ON COLUMN wallet_transaction.id IS '트랜잭션 ID';
+COMMENT ON COLUMN wallet_transaction.user_id IS 'user_id';
+COMMENT ON COLUMN wallet_transaction.wallet_id IS 'wallet_id';
+COMMENT ON COLUMN wallet_transaction.currency_id IS '통화 ID';
+COMMENT ON COLUMN wallet_transaction.tx_hash IS '트랜잭션 hash기록';
+COMMENT ON COLUMN wallet_transaction.tx_type IS '트랜잭션 타입 (DEPOSIT, WITHDRAW, TRANSFER)';
+COMMENT ON COLUMN wallet_transaction.direction IS '방향 (IN, OUT)';
+COMMENT ON COLUMN wallet_transaction.amount IS '트랜잭션 양';
+COMMENT ON COLUMN wallet_transaction.fee IS '수수료';
+COMMENT ON COLUMN wallet_transaction.status IS '트랜잭션 상태 (PENDING, CONFIRMED, FAILED, CANCELED)';
+
+-- Create Wallet Transaction Status Log Table
+CREATE TABLE wallet_transaction_status_log (
+    id BIGSERIAL NOT NULL,
+    tx_id BIGINT NOT NULL,
+    old_status VARCHAR(20) NULL,
+    new_status VARCHAR(20) NOT NULL,
+    description VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_by VARCHAR(50) NULL,
+    CONSTRAINT PK_wallet_transaction_status_log PRIMARY KEY (id),
+    CONSTRAINT FK_tx_status_tx FOREIGN KEY (tx_id) REFERENCES wallet_transaction(id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE wallet_transaction_status_log IS '트랜잭션 상태 기록 테이블';
+COMMENT ON COLUMN wallet_transaction_status_log.tx_id IS '트랜잭션 ID';
+COMMENT ON COLUMN wallet_transaction_status_log.old_status IS '이전 상태';
+COMMENT ON COLUMN wallet_transaction_status_log.new_status IS '새 상태';
+COMMENT ON COLUMN wallet_transaction_status_log.description IS '설명';
+COMMENT ON COLUMN wallet_transaction_status_log.created_by IS '생성자 (시스템 or 관리자ID)';
+
+-- Create Referral Relation Table
+CREATE TABLE referral_relation (
+    id BIGSERIAL NOT NULL,
+    referrer_id BIGINT NOT NULL,
+    referred_id BIGINT NOT NULL,
+    level INT NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMP NULL,
+    CONSTRAINT PK_referral_relation PRIMARY KEY (id),
+    CONSTRAINT FK_ref_rel_referrer FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT FK_ref_rel_referred FOREIGN KEY (referred_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT UK_referral_unique UNIQUE (referred_id, level)
+);
+
+COMMENT ON TABLE referral_relation IS '레퍼럴 관계 테이블';
+COMMENT ON COLUMN referral_relation.id IS 'referral_id';
+COMMENT ON COLUMN referral_relation.referrer_id IS '추천인 (상위)';
+COMMENT ON COLUMN referral_relation.referred_id IS '피추천인 (하위)';
+COMMENT ON COLUMN referral_relation.level IS '레벨 (1=직접, 2,3.. 멀티레벨)';
+COMMENT ON COLUMN referral_relation.status IS '상태 (ACTIVE, DEACTIVE)';
+
+-- Create Referral Stats Table
+CREATE TABLE referral_stats (
+    id BIGSERIAL NOT NULL,
+    user_id BIGINT NOT NULL,
+    direct_count INT DEFAULT 0 NOT NULL,
+    team_count INT DEFAULT 0 NOT NULL,
+    total_reward DECIMAL(36, 18) DEFAULT 0 NOT NULL,
+    today_reward DECIMAL(36, 18) DEFAULT 0 NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT PK_referral_stats PRIMARY KEY (id),
+    CONSTRAINT FK_ref_stats_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT UK_ref_stats_user UNIQUE (user_id)
+);
+
+COMMENT ON TABLE referral_stats IS '레퍼럴 통계 테이블';
+COMMENT ON COLUMN referral_stats.user_id IS '유저 ID';
+COMMENT ON COLUMN referral_stats.direct_count IS '직접 추천 수';
+COMMENT ON COLUMN referral_stats.team_count IS '전체 팀원 수';
+COMMENT ON COLUMN referral_stats.total_reward IS '총 리워드';
+COMMENT ON COLUMN referral_stats.today_reward IS '오늘 리워드';
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -182,15 +185,14 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at
-CREATE TRIGGER update_유저_updated_at BEFORE UPDATE ON "유저"
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_유저_지갑_updated_at BEFORE UPDATE ON "유저 지갑"
+CREATE TRIGGER update_user_wallet_updated_at BEFORE UPDATE ON user_wallet
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_트랜잭션_기록_updated_at BEFORE UPDATE ON "트랜잭션 기록"
+CREATE TRIGGER update_wallet_transaction_updated_at BEFORE UPDATE ON wallet_transaction
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_트랜잭션_상태_기록_updated_at BEFORE UPDATE ON "트랜잭션 상태 기록"
+CREATE TRIGGER update_referral_stats_updated_at BEFORE UPDATE ON referral_stats
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
