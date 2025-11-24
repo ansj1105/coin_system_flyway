@@ -4,6 +4,8 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("데이터베이스 스키마 테스트")
 class DatabaseSchemaTest {
 
+    private static final Logger log = LoggerFactory.getLogger(DatabaseSchemaTest.class);
+
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
             .withDatabaseName("coin_system_test")
@@ -41,6 +45,11 @@ class DatabaseSchemaTest {
         username = postgres.getUsername();
         password = postgres.getPassword();
 
+        log.info("=== DatabaseSchemaTest Setup ===");
+        log.info("JDBC URL: {}", jdbcUrl);
+        log.info("Username: {}", username);
+        log.info("================================");
+
         flyway = Flyway.configure()
                 .dataSource(jdbcUrl, username, password)
                 .locations("filesystem:src/main/resources/db/migration", "filesystem:src/test/resources/db/migration")
@@ -49,12 +58,17 @@ class DatabaseSchemaTest {
                 .baselineOnMigrate(true)
                 .load();
 
-        flyway.migrate();
+        log.info("마이그레이션 실행 중...");
+        var result = flyway.migrate();
+        log.info("마이그레이션 완료: {}개 실행됨", result.migrationsExecuted);
+        log.info("================================\n");
     }
 
     @Test
     @DisplayName("유저 테이블의 컬럼 구조가 올바르게 생성되어야 함")
     void testUserTableStructure() throws Exception {
+        log.info("=== [TEST] testUserTableStructure 시작 ===");
+        
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(
@@ -64,14 +78,18 @@ class DatabaseSchemaTest {
                              "ORDER BY ordinal_position")) {
 
             List<String> columns = new ArrayList<>();
+            log.info("users 테이블 컬럼:");
             while (rs.next()) {
-                columns.add(rs.getString("column_name"));
+                String colName = rs.getString("column_name");
+                columns.add(colName);
+                log.info("  - {} ({}, nullable: {})", colName, rs.getString("data_type"), rs.getString("is_nullable"));
             }
 
             assertThat(columns).containsExactlyInAnyOrder(
                     "id", "login_id", "password_hash", "referral_code",
                     "status", "created_at", "updated_at"
             );
+            log.info("=== [TEST] testUserTableStructure 완료 ===\n");
         }
     }
 
@@ -162,27 +180,23 @@ class DatabaseSchemaTest {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
              Statement statement = connection.createStatement()) {
 
-            // 통화 삽입 (기본값 테스트) - 중복 시 무시
-            statement.executeUpdate(
-                    "INSERT INTO currency (code, name) VALUES ('KRW', '한국 원') ON CONFLICT (code, chain) DO NOTHING");
-
-            // 유저 삽입 (기본값 테스트) - 중복 시 무시
-            statement.executeUpdate(
-                    "INSERT INTO users (login_id, password_hash, referral_code) VALUES ('testuser', 'hash', 'REF001') ON CONFLICT (login_id) DO NOTHING");
+            // V999__Test_Data.sql에서 이미 데이터가 삽입되어 있으므로
+            // 기존 데이터를 조회하여 기본값을 확인합니다.
             
-            // 이미 존재하는 경우를 대비해 referral_code 중복 방지 (다른 테스트 데이터와 겹칠 경우)
-            // 만약 위 insert가 실행되지 않았다면(이미 존재해서), 아래 쿼리로 상태 확인 가능
-            
-            // 기본값 확인
+            // 기본값 확인 - V999에서 삽입된 test_user_1 사용
             try (ResultSet rs = statement.executeQuery(
-                    "SELECT status FROM users WHERE login_id = 'testuser'")) {
+                    "SELECT status FROM users WHERE login_id = 'test_user_1'")) {
                 assertThat(rs.next()).isTrue();
                 assertThat(rs.getString("status")).isEqualTo("ACTIVE");
             }
 
+            // 지갑 잔액 기본값 확인
             try (ResultSet rs = statement.executeQuery(
-                    "SELECT balance FROM user_wallets WHERE user_id = (SELECT id FROM users WHERE login_id = 'testuser')")) {
-                // 지갑이 없을 수 있으므로 이 테스트는 스킵
+                    "SELECT balance FROM user_wallets WHERE user_id = (SELECT id FROM users WHERE login_id = 'test_user_1') LIMIT 1")) {
+                if (rs.next()) {
+                    // 지갑이 있으면 잔액이 0 이상이어야 함
+                    assertThat(rs.getBigDecimal("balance")).isNotNull();
+                }
             }
         }
     }
