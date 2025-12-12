@@ -34,8 +34,8 @@ dependencies {
 
 flyway {
     url = project.hasProperty('db.url') ? project.property('db.url') : 'jdbc:postgresql://localhost:5432/coin_system_cloud'
-    user = project.hasProperty('db.user') ? project.property('db.user') : 'an'
-    password = project.hasProperty('db.password') ? project.property('db.password') : '1234'
+    user = project.hasProperty('db.user') ? project.property('db.user') : 'foxya'
+    password = project.hasProperty('db.password') ? project.property('db.password') : 'foxya1124!@'
     locations = ['filesystem:src/main/resources/db/migration']
     encoding = 'UTF-8'
     validateOnMigrate = true
