@@ -10,9 +10,9 @@ BEGIN
     IF (SELECT COALESCE(last_value, 0) FROM users_id_seq) < 26 THEN
         PERFORM setval('users_id_seq', 26, false);
     END IF;
-    
+
     -- login_id='testyk'인 레코드가 id=25가 아니면, login_id를 변경하여 충돌 방지
-    UPDATE users 
+    UPDATE users
     SET login_id = 'old_testyk_' || id || '_' || EXTRACT(EPOCH FROM NOW())::BIGINT
     WHERE login_id = 'testyk' AND id != 25;
 END $$;
@@ -33,7 +33,7 @@ SET login_id = 'testyk',
 DO $$
 BEGIN
     -- login_id='test_receiver'인 레코드가 id=26가 아니면, login_id를 변경하여 충돌 방지
-    UPDATE users 
+    UPDATE users
     SET login_id = 'old_test_receiver_' || id || '_' || EXTRACT(EPOCH FROM NOW())::BIGINT
     WHERE login_id = 'test_receiver' AND id != 26;
 END $$;
@@ -51,10 +51,10 @@ SET login_id = 'test_receiver',
 
 -- 2. User Wallets - 여러 통화에 대한 지갑 생성
 INSERT INTO user_wallets (user_id, currency_id, address, private_key, balance, locked_balance, status, last_sync_height)
-SELECT 
+SELECT
     25,
     c.id,
-    CASE 
+    CASE
         WHEN c.code = 'TRX' THEN 'TTestAddress1234567890abcdef'
         WHEN c.code = 'USDT' AND c.chain = 'TRON' THEN 'TUSDTAddress1234567890abcdef'
         WHEN c.code = 'KORI' THEN 'TKORIAddress1234567890abcdef'
@@ -76,7 +76,7 @@ SET balance = 10000.0,
 
 -- 3. Wallet Transactions - 모든 상태별 데이터
 WITH wallet_tx_data AS (
-    SELECT 
+    SELECT
         uw.id as wallet_id,
         uw.currency_id,
         status_val,
@@ -91,7 +91,7 @@ WITH wallet_tx_data AS (
     LIMIT 100
 )
 INSERT INTO wallet_transactions (user_id, wallet_id, currency_id, tx_hash, tx_type, direction, amount, fee, status, requested_at, confirmed_at, failed_at, request_ip, request_source, description)
-SELECT 
+SELECT
     25,
     wallet_id,
     currency_id,
@@ -111,9 +111,9 @@ FROM wallet_tx_data;
 
 -- 4. Wallet Transaction Status Logs
 INSERT INTO wallet_transaction_status_logs (tx_id, old_status, new_status, description, created_by)
-SELECT 
+SELECT
     wt.id,
-    CASE 
+    CASE
         WHEN wt.status = 'CONFIRMED' THEN 'PENDING'
         WHEN wt.status = 'FAILED' THEN 'PENDING'
         WHEN wt.status = 'CANCELED' THEN 'PENDING'
@@ -128,7 +128,7 @@ AND wt.status IN ('CONFIRMED', 'FAILED', 'CANCELED');
 
 -- 5. Referral Relations
 INSERT INTO referral_relations (referrer_id, referred_id, level, status, created_at)
-VALUES 
+VALUES
     (24, 25, 1, 'ACTIVE', CURRENT_TIMESTAMP - INTERVAL '30 days'),
     (23, 25, 2, 'ACTIVE', CURRENT_TIMESTAMP - INTERVAL '30 days')
 ON CONFLICT (referred_id, level) DO NOTHING;
@@ -147,7 +147,7 @@ SET direct_count = 3,
 -- 7. Internal Transfers - 모든 상태별 데이터
 -- user_id 26의 지갑도 생성
 INSERT INTO user_wallets (user_id, currency_id, address, private_key, balance, locked_balance, status, last_sync_height)
-SELECT 
+SELECT
     26,
     c.id,
     'Receiver_' || c.code || '_' || c.chain,
@@ -161,7 +161,7 @@ WHERE c.is_active = true
 ON CONFLICT (user_id, currency_id) DO NOTHING;
 
 WITH internal_transfer_data AS (
-    SELECT 
+    SELECT
         uw1.id as sender_wallet_id,
         uw2.id as receiver_wallet_id,
         uw1.currency_id,
@@ -176,7 +176,7 @@ WITH internal_transfer_data AS (
     LIMIT 20
 )
 INSERT INTO internal_transfers (transfer_id, sender_id, sender_wallet_id, receiver_id, receiver_wallet_id, currency_id, amount, fee, status, transfer_type, memo, order_number, transaction_type, request_ip, created_at, completed_at, failed_at)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     sender_wallet_id,
@@ -186,7 +186,7 @@ SELECT
     50.0 + rn * 10,
     0.5,
     status_val,
-    CASE 
+    CASE
         WHEN status_val = 'COMPLETED' THEN 'REFERRAL_REWARD'
         ELSE 'INTERNAL'
     END,
@@ -201,7 +201,7 @@ FROM internal_transfer_data;
 
 -- 8. External Transfers - 모든 상태별 데이터
 WITH external_transfer_data AS (
-    SELECT 
+    SELECT
         uw.id as wallet_id,
         uw.currency_id,
         status_val,
@@ -212,7 +212,7 @@ WITH external_transfer_data AS (
     LIMIT 30
 )
 INSERT INTO external_transfers (transfer_id, user_id, wallet_id, currency_id, to_address, amount, fee, network_fee, status, tx_hash, chain, confirmations, required_confirmations, memo, order_number, transaction_type, request_ip, created_at, submitted_at, confirmed_at, failed_at, retry_count)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     wallet_id,
@@ -239,7 +239,7 @@ FROM external_transfer_data;
 
 -- 9. Swaps - 모든 상태별 데이터
 WITH swap_data AS (
-    SELECT 
+    SELECT
         c1.id as from_currency_id,
         c2.id as to_currency_id,
         status_val,
@@ -253,7 +253,7 @@ WITH swap_data AS (
     LIMIT 15
 )
 INSERT INTO swaps (swap_id, user_id, order_number, from_currency_id, to_currency_id, from_amount, to_amount, network, status, created_at, completed_at, failed_at, error_message)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     'SWAP_' || status_val || '_' || from_currency_id || '_' || to_currency_id || '_' || rn,
@@ -271,7 +271,7 @@ FROM swap_data;
 
 -- 10. Exchanges - 모든 상태별 데이터
 WITH exchange_data AS (
-    SELECT 
+    SELECT
         c1.id as from_currency_id,
         c2.id as to_currency_id,
         status_val,
@@ -285,7 +285,7 @@ WITH exchange_data AS (
     LIMIT 12
 )
 INSERT INTO exchanges (exchange_id, user_id, order_number, from_currency_id, to_currency_id, from_amount, to_amount, status, created_at, completed_at, failed_at, error_message)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     'EXCHANGE_' || status_val || '_' || from_currency_id || '_' || to_currency_id || '_' || rn,
@@ -302,7 +302,7 @@ FROM exchange_data;
 
 -- 11. Payment Deposits - 모든 상태별 데이터
 WITH payment_deposit_data AS (
-    SELECT 
+    SELECT
         c.id as currency_id,
         status_val,
         method_val,
@@ -314,7 +314,7 @@ WITH payment_deposit_data AS (
     LIMIT 18
 )
 INSERT INTO payment_deposits (deposit_id, user_id, order_number, currency_id, amount, deposit_method, payment_amount, status, created_at, completed_at, failed_at, error_message)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     'PAYMENT_' || status_val || '_' || method_val || '_' || currency_id || '_' || rn,
@@ -331,7 +331,7 @@ FROM payment_deposit_data;
 
 -- 12. Token Deposits - 모든 상태별 데이터
 WITH token_deposit_data AS (
-    SELECT 
+    SELECT
         c.id as currency_id,
         COALESCE(c.chain, 'TRON') as network,
         status_val,
@@ -342,7 +342,7 @@ WITH token_deposit_data AS (
     LIMIT 12
 )
 INSERT INTO token_deposits (deposit_id, user_id, order_number, currency_id, amount, network, sender_address, tx_hash, status, created_at, confirmed_at, failed_at, error_message)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     'TOKEN_DEPOSIT_' || status_val || '_' || currency_id || '_' || rn,
@@ -360,7 +360,7 @@ FROM token_deposit_data;
 
 -- 13. Airdrop Phases - 모든 상태별 데이터
 INSERT INTO airdrop_phases (user_id, phase, status, amount, unlock_date, days_remaining)
-VALUES 
+VALUES
     (25, 1, 'RELEASED', 1000.0, CURRENT_TIMESTAMP - INTERVAL '10 days', 0),
     (25, 2, 'PROCESSING', 2000.0, CURRENT_TIMESTAMP + INTERVAL '10 days', 10),
     (25, 3, 'PROCESSING', 3000.0, CURRENT_TIMESTAMP + INTERVAL '20 days', 20),
@@ -370,7 +370,7 @@ ON CONFLICT (user_id, phase) DO NOTHING;
 
 -- 14. Airdrop Transfers - 모든 상태별 데이터
 WITH airdrop_transfer_data AS (
-    SELECT 
+    SELECT
         uw.id as wallet_id,
         uw.currency_id,
         status_val,
@@ -381,7 +381,7 @@ WITH airdrop_transfer_data AS (
     LIMIT 16
 )
 INSERT INTO airdrop_transfers (transfer_id, user_id, wallet_id, currency_id, amount, status, order_number)
-SELECT 
+SELECT
     gen_random_uuid()::text,
     25,
     wallet_id,
@@ -393,7 +393,7 @@ FROM airdrop_transfer_data;
 
 -- 15. User Bonuses
 INSERT INTO user_bonuses (user_id, bonus_type, is_active, expires_at, current_count, max_count, metadata)
-VALUES 
+VALUES
     (25, 'SOCIAL_LINK', true, NULL, 0, NULL, '{"provider": "KAKAO"}'::jsonb),
     (25, 'PHONE_VERIFICATION', true, NULL, 0, NULL, NULL),
     (25, 'AD_WATCH', true, CURRENT_TIMESTAMP + INTERVAL '30 days', 5, 10, NULL),
@@ -406,7 +406,7 @@ ON CONFLICT (user_id, bonus_type) DO NOTHING;
 
 -- 16. Daily Mining
 INSERT INTO daily_mining (user_id, mining_date, mining_amount, reset_at)
-VALUES 
+VALUES
     (25, CURRENT_DATE - INTERVAL '5 days', 5000.0, (CURRENT_DATE - INTERVAL '4 days')::timestamp),
     (25, CURRENT_DATE - INTERVAL '4 days', 6000.0, (CURRENT_DATE - INTERVAL '3 days')::timestamp),
     (25, CURRENT_DATE - INTERVAL '3 days', 7000.0, (CURRENT_DATE - INTERVAL '2 days')::timestamp),
@@ -417,7 +417,7 @@ ON CONFLICT (user_id, mining_date) DO NOTHING;
 
 -- 17. Mining History - 모든 상태별 데이터
 WITH mining_history_data AS (
-    SELECT 
+    SELECT
         type_val,
         status_val,
         ROW_NUMBER() OVER (ORDER BY type_val, status_val) as rn
@@ -426,7 +426,7 @@ WITH mining_history_data AS (
     LIMIT 20
 )
 INSERT INTO mining_history (user_id, level, amount, type, status)
-SELECT 
+SELECT
     25,
     5,
     100.0 + rn * 10,
@@ -436,7 +436,7 @@ FROM mining_history_data;
 
 -- 18. User Missions
 WITH user_mission_data AS (
-    SELECT 
+    SELECT
         m.id as mission_id,
         m.required_count,
         ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY CURRENT_DATE) as rn
@@ -445,7 +445,7 @@ WITH user_mission_data AS (
     LIMIT 15
 )
 INSERT INTO user_missions (user_id, mission_id, mission_date, current_count, reset_at)
-SELECT 
+SELECT
     25,
     mission_id,
     CURRENT_DATE - INTERVAL '2 days' + rn * INTERVAL '1 day',
@@ -455,7 +455,7 @@ FROM user_mission_data;
 
 -- 19. Social Links
 INSERT INTO social_links (user_id, provider, provider_user_id, email)
-VALUES 
+VALUES
     (25, 'KAKAO', 'kakao_user_12345', 'testyk@kakao.com'),
     (25, 'GOOGLE', 'google_user_12345', 'testyk@gmail.com')
 ON CONFLICT (user_id, provider) DO NOTHING;
@@ -487,7 +487,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- 25. Notifications
 INSERT INTO notifications (user_id, type, title, message, is_read, related_id, metadata)
-VALUES 
+VALUES
     (25, 'DEPOSIT_SUCCESS', '입금 완료', '입금이 성공적으로 완료되었습니다.', false, 1, '{"amount": 10000}'::jsonb),
     (25, 'WITHDRAW_SUCCESS', '출금 완료', '출금이 성공적으로 완료되었습니다.', true, 2, '{"amount": 5000}'::jsonb),
     (25, 'EXCHANGE_SUCCESS', '환전 완료', '환전이 성공적으로 완료되었습니다.', false, 3, NULL),
@@ -498,7 +498,7 @@ VALUES
 
 -- 26. Inquiries - 모든 상태별 데이터
 INSERT INTO inquiries (user_id, subject, content, email, status)
-VALUES 
+VALUES
     (25, '계정 문의', '계정 관련 문의드립니다.', 'testyk@example.com', 'PENDING'),
     (25, '입금 문의', '입금이 안됩니다.', 'testyk@example.com', 'PROCESSING'),
     (25, '출금 문의', '출금이 안됩니다.', 'testyk@example.com', 'COMPLETED'),
@@ -506,7 +506,7 @@ VALUES
 
 -- 27. Banner Clicks (배너가 있는 경우)
 WITH banner_click_data AS (
-    SELECT 
+    SELECT
         b.id as banner_id,
         ROW_NUMBER() OVER (ORDER BY b.id) as rn
     FROM banners b
@@ -514,7 +514,7 @@ WITH banner_click_data AS (
     LIMIT 5
 )
 INSERT INTO banner_clicks (banner_id, user_id, clicked_at, ip_address, user_agent)
-SELECT 
+SELECT
     banner_id,
     25,
     CURRENT_TIMESTAMP - INTERVAL '3 days' + rn * INTERVAL '1 hour',
