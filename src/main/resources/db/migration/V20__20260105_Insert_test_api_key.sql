@@ -6,7 +6,7 @@ DELETE FROM api_keys WHERE client_name IN ('admin', 'test', '안서정', '엑스
 
 -- 테스트용 API Key 추가
 INSERT INTO api_keys (api_key, api_secret, client_name, description, is_active, expires_at, created_at, updated_at)
-VALUES 
+VALUES
     -- 활성화된 관리자 API Key (만료일 없음)
     ('sk_live_admin_2024_a8f3b2c9d1e4f5a6b7c8d9e0f1a2b3c', 'sec_live_admin_2024_x9y8z7w6v5u4t3s2r1q0p9o8n7m6l', 'admin', '관리자 API 키', true, NULL, NOW(), NOW()),
     -- 활성화된 테스트 API Key (만료일 있음, 미래)
@@ -16,7 +16,7 @@ VALUES
     -- 만료된 API Key
     ('sk_live_xhub_2024_d5c0b9a8f7e6d5c4b3a2f1e0d9c8b7a', 'sec_live_xhub_2024_a0b9c8d7e6f5a4b3c2d1e0f9a8b7c', '엑스이허브', '엑스이허브 API 키 (만료됨)', true, NOW() - INTERVAL '1 day', NOW(), NOW())
 ON CONFLICT (api_key) DO UPDATE
-SET 
+SET
     api_secret = EXCLUDED.api_secret,
     client_name = EXCLUDED.client_name,
     description = EXCLUDED.description,
