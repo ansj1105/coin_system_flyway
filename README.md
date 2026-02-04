@@ -143,11 +143,12 @@ db.password=foxya1124!@
    ./gradlew flywayRepair
    ```
 
-2. **스키마 이력 테이블만 비우기** (해당 DB에 접속해서 실행)
+2. **Flyway 스키마 이력 테이블 삭제** (해당 DB에 접속해서 실행)
+   - baseline은 "테이블이 없을 때"만 동작하므로, **테이블을 DROP**해야 합니다. 비즈니스 테이블/데이터는 영향 없음.
    - 현재 DB가 **이미 최신 스키마(V42까지)** 라고 가정할 때만 사용합니다.
    ```sql
    -- 해당 DB에 접속한 뒤 (예: psql -U foxya -d coin_system_cloud)
-   TRUNCATE flyway_schema_history;
+   DROP TABLE IF EXISTS flyway_schema_history;
    ```
 
 3. **Baseline으로 "여기까지 적용됨" 표시**
