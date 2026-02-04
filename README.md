@@ -132,6 +132,39 @@ db.password=foxya1124!@
 ./gradlew flywayRepair
 ```
 
+### 기존 DB에 Flyway 적용 (데이터 유지)
+
+이미 테이블이 있는 DB에서 `flywayMigrate` 시 **"relation already exists"** 가 나오는 경우, **애플리케이션 데이터는 건드리지 않고** Flyway 기록만 맞추면 됩니다.
+
+**주의:** 아래에서 정리하는 것은 Flyway 전용 테이블 `flyway_schema_history` 뿐이며, **실제 비즈니스 테이블/데이터는 삭제되지 않습니다.**
+
+1. **실패한 마이그레이션 정리**
+   ```bash
+   ./gradlew flywayRepair
+   ```
+
+2. **스키마 이력 테이블만 비우기** (해당 DB에 접속해서 실행)
+   - 현재 DB가 **이미 최신 스키마(V42까지)** 라고 가정할 때만 사용합니다.
+   ```sql
+   -- 해당 DB에 접속한 뒤 (예: psql -U foxya -d coin_system_cloud)
+   TRUNCATE flyway_schema_history;
+   ```
+
+3. **Baseline으로 "여기까지 적용됨" 표시**
+   - 마지막 적용된 마이그레이션 버전이 V42라면:
+   ```bash
+   ./gradlew flywayBaseline -Pflyway.baselineVersion=42
+   ```
+   - 다른 버전까지 적용된 DB라면 그 버전 번호로 넣습니다 (예: `-Pflyway.baselineVersion=30`).
+
+4. **이후부터는 일반 마이그레이션**
+   ```bash
+   ./gradlew flywayMigrate
+   ```
+   - V43 이상이 생기면 이 명령으로만 적용하면 됩니다.
+
+**DB가 V42보다 이전 스키마인 경우:** `flyway.baselineVersion` 을 실제 적용된 마지막 버전으로 넣고, 4번 `flywayMigrate` 를 실행하면 그 다음 버전들만 적용됩니다.
+
 ### 마이그레이션 검증
 
 ```bash

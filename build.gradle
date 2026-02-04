@@ -41,6 +41,8 @@ flyway {
     validateOnMigrate = true
     baselineOnMigrate = true
     cleanDisabled = false  // clean 명령 활성화 (개발 환경용)
+    // 기존 DB를 Flyway에 맞출 때: -Pflyway.baselineVersion=42 로 baseline 실행
+    baselineVersion = project.findProperty('flyway.baselineVersion') ?: '1'
 }
 
 // Test configuration - only needed for running tests
