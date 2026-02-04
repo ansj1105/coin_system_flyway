@@ -29,9 +29,9 @@ coin_system_flyway/
 
 ## 사전 요구사항
 
-- Java 8 이상
-- Gradle 7.0 이상
+- Java 11 이상
 - PostgreSQL 12 이상
+- **Gradle은 설치 불필요**: 프로젝트에 포함된 Gradle Wrapper(`gradlew`)로 동일 버전의 Gradle을 자동 사용합니다.
 
 ## 설정
 
@@ -102,7 +102,19 @@ db.password=foxya1124!@
 
 ## 사용 방법
 
-### 마이그레이션 실행
+### 서버에서 마이그레이션 실행
+
+서버에는 **Java만 설치**되어 있으면 됩니다. Gradle은 `gradlew`가 필요한 버전을 자동으로 받아 사용합니다.
+
+```bash
+# 기본 설정( gradle.properties 또는 아래 -P 옵션)으로 마이그레이션
+./gradlew flywayMigrate
+
+# DB 연결을 옵션으로 지정
+./gradlew flywayMigrate -Pdb.url=jdbc:postgresql://호스트:5432/DB명 -Pdb.user=유저 -Pdb.password=비밀번호
+```
+
+### 마이그레이션 실행 (로컬)
 
 ```bash
 ./gradlew flywayMigrate
